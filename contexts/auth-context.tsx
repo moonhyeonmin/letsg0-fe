@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "환영합니다!",
       })
 
-      router.push("/")
+      router.push("/");
     } catch (error) {
       if (error instanceof ApiError) {
         toast({
