@@ -1,5 +1,6 @@
 import type { LoginRequest, LoginResponse, SignupRequest, User } from "@/types/auth"
 import type { JobPost, JobPostCreateRequest } from "@/types/job"
+import type { ApplicationRequest, ApplicationResponse, Application } from "@/types/application"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
@@ -131,6 +132,26 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify(data),
     })
+  }
+
+  // Application 관련 API
+  async applyToJobPost(data: ApplicationRequest): Promise<ApplicationResponse> {
+    return this.request<ApplicationResponse>("/api/applications", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getUserApplications(userId: number): Promise<Application[]> {
+    return this.request<Application[]>(`/api/applications/user/${userId}`)
+  }
+
+  async getUserApplicationsByStatus(userId: number, status: string): Promise<Application[]> {
+    return this.request<Application[]>(`/api/applications/user/${userId}/status?status=${status}`)
+  }
+
+  async getUserApplicationsByJobPost(userId: number, jobPostId: number): Promise<Application[]> {
+    return this.request<Application[]>(`/api/applications/user/${userId}/jobpost/${jobPostId}`)
   }
 }
 

@@ -8,6 +8,8 @@ import { SearchBar } from "@/components/search-bar"
 import type { FilterOptions } from "@/components/job-filter"
 import { AuthGuard } from "@/components/auth-guard"
 import { useJobPosts } from "@/hooks/use-job-posts"
+import { useApplications } from "@/hooks/use-applications"
+import type { ApplicationStatus } from "@/types/application"
 import { Loader2 } from "lucide-react"
 
 function ApplicationsPage() {
@@ -20,10 +22,38 @@ function ApplicationsPage() {
     skills: [],
   })
   const [sortOption, setSortOption] = useState<SortOption>("latest")
-  const [appliedJobs] = useState<string[]>(["1", "3", "5"]) // 임시 지원한 공고 ID들
-  const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>(["2", "4", "6"]) // 임시 즐겨찾기 공고 ID들
+  const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([])
 
-  const { jobPosts, loading, error, searchJobPosts, filterJobPosts } = useJobPosts()
+  const { applications, loading, error, fetchApplicationsByStatus } = useApplications()
+  const { jobPosts } = useJobPosts()
+
+  // 지원한 공고들을 JobPostExtended 형태로 변환
+  const appliedJobsList = useMemo(() => {
+    return applications.map((app) => {
+      // jobPosts에서 해당 공고 찾기 또는 application의 jobPost 정보 사용
+      const jobPost = jobPosts.find((job) => job.id === app.jobPost.id) || {
+        id: app.jobPost.id,
+        title: app.jobPost.title,
+        company: app.jobPost.company,
+        location: app.jobPost.location,
+        position: app.jobPost.position,
+        content: app.memo || "지원한 공고입니다.",
+        deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        summary: app.memo || "지원한 공고입니다.",
+        tags: [app.jobPost.position, app.jobPost.location.split(" ")[0], "지원완료"],
+        createdAt: app.application_date,
+      }
+      return jobPost
+    })
+  }, [applications, jobPosts])
+
+  // 즐겨찾기한 공고들 (기존 로직 유지 - 실제로는 별도 API가 필요)
+  const bookmarkedJobsList = useMemo(() => {
+    return jobPosts.filter((job) => bookmarkedJobs.includes(job.id.toString()))
+  }, [jobPosts, bookmarkedJobs])
+
+  // 현재 탭에 따른 공고 목록
+  const currentJobs = activeTab === "applied" ? appliedJobsList : bookmarkedJobsList
 
   // 필터 옵션 생성
   const availableOptions = useMemo(() => {
@@ -34,19 +64,6 @@ function ApplicationsPage() {
 
     return { companies, positions, locations, skills }
   }, [jobPosts])
-
-  // 지원한 공고 필터링
-  const appliedJobsList = useMemo(() => {
-    return jobPosts.filter((job) => appliedJobs.includes(job.id.toString()))
-  }, [jobPosts, appliedJobs])
-
-  // 즐겨찾기한 공고 필터링
-  const bookmarkedJobsList = useMemo(() => {
-    return jobPosts.filter((job) => bookmarkedJobs.includes(job.id.toString()))
-  }, [jobPosts, bookmarkedJobs])
-
-  // 현재 탭에 따른 공고 목록
-  const currentJobs = activeTab === "applied" ? appliedJobsList : bookmarkedJobsList
 
   // 필터링 및 정렬된 공고 목록
   const filteredAndSortedJobs = useMemo(() => {
@@ -118,6 +135,12 @@ function ApplicationsPage() {
     console.log("지원:", jobId)
   }
 
+  const handleStatusFilter = async (status?: ApplicationStatus) => {
+    if (status) {
+      await fetchApplicationsByStatus(status)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -175,17 +198,9 @@ function ApplicationsPage() {
             {filteredAndSortedJobs.map((job) => (
               <JobCard
                 key={job.id}
-                id={job.id.toString()}
-                title={job.title}
-                company={job.company}
-                location={job.location}
-                deadline={job.deadline}
-                summary={job.summary}
-                tags={job.tags}
+                job={job}
                 isBookmarked={bookmarkedJobs.includes(job.id.toString())}
-                isApplied={true}
                 onBookmark={handleBookmark}
-                onApply={handleApply}
               />
             ))}
           </div>
@@ -194,20 +209,7 @@ function ApplicationsPage() {
         <TabsContent value="bookmarked" className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAndSortedJobs.map((job) => (
-              <JobCard
-                key={job.id}
-                id={job.id.toString()}
-                title={job.title}
-                company={job.company}
-                location={job.location}
-                deadline={job.deadline}
-                summary={job.summary}
-                tags={job.tags}
-                isBookmarked={true}
-                isApplied={appliedJobs.includes(job.id.toString())}
-                onBookmark={handleBookmark}
-                onApply={handleApply}
-              />
+              <JobCard key={job.id} job={job} isBookmarked={true} onBookmark={handleBookmark} />
             ))}
           </div>
         </TabsContent>

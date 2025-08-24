@@ -187,16 +187,9 @@ function HomePage() {
         {filteredAndSortedJobs.map((job) => (
           <JobCard
             key={job.id}
-            id={job.id.toString()}
-            title={job.title}
-            company={job.company}
-            location={job.location}
-            deadline={job.deadline}
-            summary={job.summary}
-            tags={job.tags}
+            job={job}
             isBookmarked={bookmarkedJobs.includes(job.id.toString())}
             onBookmark={handleBookmark}
-            onApply={handleApply}
           />
         ))}
       </div>
