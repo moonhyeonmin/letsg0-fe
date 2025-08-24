@@ -15,7 +15,6 @@ export interface ApplicationRequest {
   status: ApplicationStatus
   memo: string
   questions: ApplicationQuestionDto[]
-  isResulSuccess: boolean
 }
 
 export interface ApplicationResponse {
@@ -23,7 +22,6 @@ export interface ApplicationResponse {
   jobPostId: number
   status: ApplicationStatus
   memo: string
-  isResultSuccess: boolean
 }
 
 export interface Application {
@@ -39,6 +37,7 @@ export interface Application {
     company: string
     location: string
     position: string
+    deadline: string
   }
   status: ApplicationStatus
   memo: string

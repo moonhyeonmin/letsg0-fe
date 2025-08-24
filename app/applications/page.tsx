@@ -29,23 +29,18 @@ function ApplicationsPage() {
 
   // 지원한 공고들을 JobPostExtended 형태로 변환
   const appliedJobsList = useMemo(() => {
-    return applications.map((app) => {
-      // jobPosts에서 해당 공고 찾기 또는 application의 jobPost 정보 사용
-      const jobPost = jobPosts.find((job) => job.id === app.jobPost.id) || {
-        id: app.jobPost.id,
-        title: app.jobPost.title,
-        company: app.jobPost.company,
-        location: app.jobPost.location,
-        position: app.jobPost.position,
-        content: app.memo || "지원한 공고입니다.",
-        deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        summary: app.memo || "지원한 공고입니다.",
-        tags: [app.jobPost.position, app.jobPost.location.split(" ")[0], "지원완료"],
-        createdAt: app.application_date,
-      }
-      return jobPost
-    })
-  }, [applications, jobPosts])
+    return applications.map((app) => ({
+      id: app.jobPost.id,
+      title: app.jobPost.title,
+      company: app.jobPost.company,
+      location: app.jobPost.location,
+      position: app.jobPost.position,
+      content: app.memo || "지원한 공고입니다.",
+      deadline: app.jobPost.deadline, // <-- 백엔드에서 받은 deadline 사용
+      summary: app.memo || "지원한 공고입니다.",
+      tags: [app.jobPost.position, app.jobPost.location.split(" ")[0], "지원완료"],
+    }))
+  }, [applications])
 
   // 즐겨찾기한 공고들 (기존 로직 유지 - 실제로는 별도 API가 필요)
   const bookmarkedJobsList = useMemo(() => {
@@ -99,14 +94,12 @@ function ApplicationsPage() {
       const bBookmarked = bookmarkedJobs.includes(b.id.toString())
 
       switch (sortOption) {
-        case "latest":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         case "deadline":
           return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
         case "bookmark-latest":
           if (aBookmarked && !bBookmarked) return -1
           if (!aBookmarked && bBookmarked) return 1
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          return new Date(b.deadline).getTime() - new Date(a.deadline).getTime()
         case "bookmark-deadline":
           if (aBookmarked && !bBookmarked) return -1
           if (!aBookmarked && bBookmarked) return 1

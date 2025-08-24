@@ -68,7 +68,6 @@ export function ApplicationForm({ job, open, onOpenChange, onSubmit, isLoading }
       status: ApplicationStatus.APPLIED,
       memo: memo.trim(),
       questions: questions.filter((q) => q.question.trim() && q.answer.trim()),
-      isResulSuccess: false, // 지원 시점에는 false
     }
 
     onSubmit(applicationData)

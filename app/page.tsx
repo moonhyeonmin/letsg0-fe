@@ -75,14 +75,12 @@ function HomePage() {
       const bBookmarked = bookmarkedJobs.includes(b.id.toString())
 
       switch (sortOption) {
-        case "latest":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         case "deadline":
           return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
-        case "bookmark-latest":
-          if (aBookmarked && !bBookmarked) return -1
-          if (!aBookmarked && bBookmarked) return 1
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        // case "bookmark-latest":
+        //   if (aBookmarked && !bBookmarked) return -1
+        //   if (!aBookmarked && bBookmarked) return 1
+        //   return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         case "bookmark-deadline":
           if (aBookmarked && !bBookmarked) return -1
           if (!aBookmarked && bBookmarked) return 1

@@ -31,7 +31,6 @@ export interface JobPostExtended extends JobPost {
   deadline: string
   summary: string
   tags: string[]
-  createdAt: string
   salary?: string
   requirements?: string
   source_url?: string
