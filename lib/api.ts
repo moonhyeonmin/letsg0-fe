@@ -1,4 +1,5 @@
 import type { LoginRequest, LoginResponse, SignupRequest, User } from "@/types/auth"
+import type { JobPost, JobPostCreateRequest } from "@/types/job"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
@@ -96,9 +97,40 @@ class ApiClient {
     })
   }
 
-  // 사용자 정보 조회 (추후 구현 예정)
   async getCurrentUser(): Promise<User> {
     return this.request<User>("/api/users/me")
+  }
+
+  // JobPost 관련 API
+  async getJobPosts(): Promise<JobPost[]> {
+    return this.request<JobPost[]>("/api/jobs")
+  }
+
+  async getJobPostById(id: number): Promise<JobPost> {
+    return this.request<JobPost>(`/api/jobs/${id}`)
+  }
+
+  async getJobPostsByCompany(company: string): Promise<JobPost[]> {
+    return this.request<JobPost[]>(`/api/jobs/company/${encodeURIComponent(company)}`)
+  }
+
+  async getJobPostsByTitle(title: string): Promise<JobPost[]> {
+    return this.request<JobPost[]>(`/api/jobs/title/${encodeURIComponent(title)}`)
+  }
+
+  async getJobPostsByLocation(location: string): Promise<JobPost[]> {
+    return this.request<JobPost[]>(`/api/jobs/location/${encodeURIComponent(location)}`)
+  }
+
+  async getJobPostsByPosition(position: string): Promise<JobPost[]> {
+    return this.request<JobPost[]>(`/api/jobs/position/${encodeURIComponent(position)}`)
+  }
+
+  async createJobPost(data: JobPostCreateRequest): Promise<JobPost> {
+    return this.request<JobPost>("/api/jobs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
   }
 }
 

@@ -8,78 +8,10 @@ import { useState, useMemo, useEffect } from "react"
 import { NotificationSettings } from "@/components/notification-settings"
 import { NotificationToast } from "@/components/notification-toast"
 import { useNotifications } from "@/hooks/use-notifications"
+import { useJobPosts } from "@/hooks/use-job-posts"
 import { Button } from "@/components/ui/button"
 import { AuthGuard } from "@/components/auth-guard"
-
-// 샘플 데이터 (날짜 정보 추가)
-const sampleJobs = [
-  {
-    id: "1",
-    title: "프론트엔드 개발자 (React/Next.js)",
-    company: "테크스타트업",
-    location: "서울 강남구",
-    deadline: "2024-01-15",
-    summary: "React, Next.js를 활용한 웹 서비스 개발 및 유지보수를 담당하실 프론트엔드 개발자를 모집합니다.",
-    tags: ["React", "Next.js", "TypeScript", "신입가능"],
-    createdAt: "2024-01-10",
-    position: "프론트엔드 개발자",
-  },
-  {
-    id: "2",
-    title: "백엔드 개발자 (Node.js/Python)",
-    company: "글로벌IT",
-    location: "서울 서초구",
-    deadline: "2024-01-20",
-    summary: "대규모 트래픽을 처리하는 백엔드 시스템 설계 및 개발 업무를 담당하실 개발자를 찾습니다.",
-    tags: ["Node.js", "Python", "AWS", "경력3년+"],
-    createdAt: "2024-01-08",
-    position: "백엔드 개발자",
-  },
-  {
-    id: "3",
-    title: "풀스택 개발자",
-    company: "이커머스컴퍼니",
-    location: "서울 마포구",
-    deadline: "2024-01-25",
-    summary: "프론트엔드부터 백엔드까지 전체 개발 스택을 다룰 수 있는 풀스택 개발자를 모집합니다.",
-    tags: ["React", "Node.js", "MongoDB", "경력무관"],
-    createdAt: "2024-01-12",
-    position: "풀스택 개발자",
-  },
-  {
-    id: "4",
-    title: "데이터 사이언티스트",
-    company: "AI솔루션",
-    location: "서울 송파구",
-    deadline: "2024-01-30",
-    summary: "머신러닝 모델 개발 및 데이터 분석을 통한 비즈니스 인사이트 도출 업무를 담당합니다.",
-    tags: ["Python", "ML", "TensorFlow", "경력2년+"],
-    createdAt: "2024-01-09",
-    position: "데이터 사이언티스트",
-  },
-  {
-    id: "5",
-    title: "모바일 앱 개발자 (Flutter)",
-    company: "모바일스튜디오",
-    location: "서울 용산구",
-    deadline: "2024-02-05",
-    summary: "Flutter를 활용한 크로스플랫폼 모바일 앱 개발 및 유지보수 업무를 담당합니다.",
-    tags: ["Flutter", "Dart", "Firebase", "신입가능"],
-    createdAt: "2024-01-11",
-    position: "모바일 개발자",
-  },
-  {
-    id: "6",
-    title: "DevOps 엔지니어",
-    company: "클라우드테크",
-    location: "서울 영등포구",
-    deadline: "2024-02-10",
-    summary: "클라우드 인프라 구축 및 CI/CD 파이프라인 관리를 담당하실 DevOps 엔지니어를 모집합니다.",
-    tags: ["AWS", "Docker", "Kubernetes", "경력3년+"],
-    createdAt: "2024-01-07",
-    position: "DevOps 엔지니어",
-  },
-]
+import { Loader2 } from "lucide-react"
 
 function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -91,6 +23,8 @@ function HomePage() {
   })
   const [sortOption, setSortOption] = useState<SortOption>("latest")
   const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([])
+
+  const { jobPosts, loading, error, searchJobPosts, filterJobPosts } = useJobPosts()
 
   const {
     rules,
@@ -107,31 +41,21 @@ function HomePage() {
     requestNotificationPermission()
   }, [requestNotificationPermission])
 
-  // 필터 옵션 생성
+  // 필터 옵션 생성 (실제 데이터에서)
   const availableOptions = useMemo(() => {
-    const companies = [...new Set(sampleJobs.map((job) => job.company))]
-    const positions = [...new Set(sampleJobs.map((job) => job.position))]
-    const locations = [...new Set(sampleJobs.map((job) => job.location))]
-    const skills = [...new Set(sampleJobs.flatMap((job) => job.tags))]
+    const companies = [...new Set(jobPosts.map((job) => job.company))]
+    const positions = [...new Set(jobPosts.map((job) => job.position))]
+    const locations = [...new Set(jobPosts.map((job) => job.location))]
+    const skills = [...new Set(jobPosts.flatMap((job) => job.tags))]
 
     return { companies, positions, locations, skills }
-  }, [])
+  }, [jobPosts])
 
   // 필터링 및 정렬된 공고 목록
   const filteredAndSortedJobs = useMemo(() => {
-    let filtered = sampleJobs
+    let filtered = jobPosts
 
-    // 검색 필터링
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(
-        (job) =>
-          job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          job.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
-      )
-    }
-
-    // 필터 적용
+    // 클라이언트 사이드 필터링 (API 필터링과 추가로)
     if (filters.companies.length > 0) {
       filtered = filtered.filter((job) => filters.companies.includes(job.company))
     }
@@ -147,8 +71,8 @@ function HomePage() {
 
     // 정렬 적용
     const sorted = [...filtered].sort((a, b) => {
-      const aBookmarked = bookmarkedJobs.includes(a.id)
-      const bBookmarked = bookmarkedJobs.includes(b.id)
+      const aBookmarked = bookmarkedJobs.includes(a.id.toString())
+      const bBookmarked = bookmarkedJobs.includes(b.id.toString())
 
       switch (sortOption) {
         case "latest":
@@ -169,14 +93,20 @@ function HomePage() {
     })
 
     return sorted
-  }, [searchQuery, filters, sortOption, bookmarkedJobs])
+  }, [jobPosts, filters, sortOption, bookmarkedJobs])
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query)
+    await searchJobPosts(query)
   }
 
-  const handleFilterChange = (newFilters: FilterOptions) => {
+  const handleFilterChange = async (newFilters: FilterOptions) => {
     setFilters(newFilters)
+    await filterJobPosts({
+      companies: newFilters.companies,
+      positions: newFilters.positions,
+      locations: newFilters.locations,
+    })
   }
 
   const handleBookmark = (jobId: string) => {
@@ -185,6 +115,29 @@ function HomePage() {
 
   const handleApply = (jobId: string) => {
     console.log("지원:", jobId)
+    // TODO: 실제 지원 API 호출
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>공고를 불러오는 중...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>다시 시도</Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -234,19 +187,26 @@ function HomePage() {
         {filteredAndSortedJobs.map((job) => (
           <JobCard
             key={job.id}
-            {...job}
-            isBookmarked={bookmarkedJobs.includes(job.id)}
+            id={job.id.toString()}
+            title={job.title}
+            company={job.company}
+            location={job.location}
+            deadline={job.deadline}
+            summary={job.summary}
+            tags={job.tags}
+            isBookmarked={bookmarkedJobs.includes(job.id.toString())}
             onBookmark={handleBookmark}
             onApply={handleApply}
           />
         ))}
       </div>
 
-      {filteredAndSortedJobs.length === 0 && (
+      {filteredAndSortedJobs.length === 0 && !loading && (
         <div className="text-center py-12">
           <p className="text-gray-500">조건에 맞는 공고가 없습니다.</p>
         </div>
       )}
+
       <NotificationToast
         notifications={notifications}
         onMarkAsRead={markAsRead}

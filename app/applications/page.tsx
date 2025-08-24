@@ -1,73 +1,17 @@
 "use client"
 
-import { JobCard } from "@/components/job-card"
-import { SearchBar } from "@/components/search-bar"
-import { JobSort, type SortOption } from "@/components/job-sort"
-import type { FilterOptions } from "@/components/job-filter"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
 import { useState, useMemo } from "react"
-import { NotificationSettings } from "@/components/notification-settings"
-import { useNotifications } from "@/hooks/use-notifications"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { JobCard } from "@/components/job-card"
+import { JobSort, type SortOption } from "@/components/job-sort"
+import { SearchBar } from "@/components/search-bar"
+import type { FilterOptions } from "@/components/job-filter"
+import { AuthGuard } from "@/components/auth-guard"
+import { useJobPosts } from "@/hooks/use-job-posts"
+import { Loader2 } from "lucide-react"
 
-// 샘플 데이터 (날짜 정보 추가)
-const appliedJobs = [
-  {
-    id: "1",
-    title: "프론트엔드 개발자 (React/Next.js)",
-    company: "테크스타트업",
-    location: "서울 강남구",
-    deadline: "2024-01-15",
-    summary: "React, Next.js를 활용한 웹 서비스 개발 및 유지보수를 담당하실 프론트엔드 개발자를 모집합니다.",
-    tags: ["React", "Next.js", "TypeScript", "신입가능"],
-    isApplied: true,
-    appliedDate: "2024-01-05",
-    createdAt: "2024-01-10",
-    position: "프론트엔드 개발자",
-  },
-  {
-    id: "3",
-    title: "풀스택 개발자",
-    company: "이커머스컴퍼니",
-    location: "서울 마포구",
-    deadline: "2024-01-25",
-    summary: "프론트엔드부터 백엔드까지 전체 개발 스택을 다룰 수 있는 풀스택 개발자를 모집합니다.",
-    tags: ["React", "Node.js", "MongoDB", "경력무관"],
-    isApplied: true,
-    appliedDate: "2024-01-08",
-    createdAt: "2024-01-12",
-    position: "풀스택 개발자",
-  },
-]
-
-const bookmarkedJobs = [
-  {
-    id: "2",
-    title: "백엔드 개발자 (Node.js/Python)",
-    company: "글로벌IT",
-    location: "서울 서초구",
-    deadline: "2024-01-20",
-    summary: "대규모 트래픽을 처리하는 백엔드 시스템 설계 및 개발 업무를 담당하실 개발자를 찾습니다.",
-    tags: ["Node.js", "Python", "AWS", "경력3년+"],
-    isBookmarked: true,
-    createdAt: "2024-01-08",
-    position: "백엔드 개발자",
-  },
-  {
-    id: "4",
-    title: "데이터 사이언티스트",
-    company: "AI솔루션",
-    location: "서울 송파구",
-    deadline: "2024-01-30",
-    summary: "머신러닝 모델 개발 및 데이터 분석을 통한 비즈니스 인사이트 도출 업무를 담당합니다.",
-    tags: ["Python", "ML", "TensorFlow", "경력2년+"],
-    isBookmarked: true,
-    createdAt: "2024-01-09",
-    position: "데이터 사이언티스트",
-  },
-]
-
-export default function ApplicationsPage() {
+function ApplicationsPage() {
+  const [activeTab, setActiveTab] = useState("applied")
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState<FilterOptions>({
     companies: [],
@@ -76,23 +20,37 @@ export default function ApplicationsPage() {
     skills: [],
   })
   const [sortOption, setSortOption] = useState<SortOption>("latest")
+  const [appliedJobs] = useState<string[]>(["1", "3", "5"]) // 임시 지원한 공고 ID들
+  const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>(["2", "4", "6"]) // 임시 즐겨찾기 공고 ID들
 
-  const { rules, updateRules } = useNotifications()
+  const { jobPosts, loading, error, searchJobPosts, filterJobPosts } = useJobPosts()
 
   // 필터 옵션 생성
   const availableOptions = useMemo(() => {
-    const allJobs = [...appliedJobs, ...bookmarkedJobs]
-    const companies = [...new Set(allJobs.map((job) => job.company))]
-    const positions = [...new Set(allJobs.map((job) => job.position))]
-    const locations = [...new Set(allJobs.map((job) => job.location))]
-    const skills = [...new Set(allJobs.flatMap((job) => job.tags))]
+    const companies = [...new Set(jobPosts.map((job) => job.company))]
+    const positions = [...new Set(jobPosts.map((job) => job.position))]
+    const locations = [...new Set(jobPosts.map((job) => job.location))]
+    const skills = [...new Set(jobPosts.flatMap((job) => job.tags))]
 
     return { companies, positions, locations, skills }
-  }, [])
+  }, [jobPosts])
 
-  // 필터링 및 정렬 함수
-  const filterAndSortJobs = (jobs: any[]) => {
-    let filtered = jobs
+  // 지원한 공고 필터링
+  const appliedJobsList = useMemo(() => {
+    return jobPosts.filter((job) => appliedJobs.includes(job.id.toString()))
+  }, [jobPosts, appliedJobs])
+
+  // 즐겨찾기한 공고 필터링
+  const bookmarkedJobsList = useMemo(() => {
+    return jobPosts.filter((job) => bookmarkedJobs.includes(job.id.toString()))
+  }, [jobPosts, bookmarkedJobs])
+
+  // 현재 탭에 따른 공고 목록
+  const currentJobs = activeTab === "applied" ? appliedJobsList : bookmarkedJobsList
+
+  // 필터링 및 정렬된 공고 목록
+  const filteredAndSortedJobs = useMemo(() => {
+    let filtered = currentJobs
 
     // 검색 필터링
     if (searchQuery.trim()) {
@@ -100,7 +58,7 @@ export default function ApplicationsPage() {
         (job) =>
           job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          job.tags.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
+          job.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
       )
     }
 
@@ -115,13 +73,13 @@ export default function ApplicationsPage() {
       filtered = filtered.filter((job) => filters.locations.includes(job.location))
     }
     if (filters.skills.length > 0) {
-      filtered = filtered.filter((job) => job.tags.some((tag: string) => filters.skills.includes(tag)))
+      filtered = filtered.filter((job) => job.tags.some((tag) => filters.skills.includes(tag)))
     }
 
     // 정렬 적용
     const sorted = [...filtered].sort((a, b) => {
-      const aBookmarked = a.isBookmarked || false
-      const bBookmarked = b.isBookmarked || false
+      const aBookmarked = bookmarkedJobs.includes(a.id.toString())
+      const bBookmarked = bookmarkedJobs.includes(b.id.toString())
 
       switch (sortOption) {
         case "latest":
@@ -142,92 +100,134 @@ export default function ApplicationsPage() {
     })
 
     return sorted
-  }
+  }, [currentJobs, searchQuery, filters, sortOption, bookmarkedJobs])
 
-  const filteredAppliedJobs = useMemo(() => filterAndSortJobs(appliedJobs), [searchQuery, filters, sortOption])
-  const filteredBookmarkedJobs = useMemo(() => filterAndSortJobs(bookmarkedJobs), [searchQuery, filters, sortOption])
-
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query)
   }
 
-  const handleFilterChange = (newFilters: FilterOptions) => {
+  const handleFilterChange = async (newFilters: FilterOptions) => {
     setFilters(newFilters)
+  }
+
+  const handleBookmark = (jobId: string) => {
+    setBookmarkedJobs((prev) => (prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]))
+  }
+
+  const handleApply = (jobId: string) => {
+    console.log("지원:", jobId)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>공고를 불러오는 중...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">내 지원 관리</h1>
-        <p className="text-gray-600 mb-4">지원한 공고와 관심 있는 공고를 관리하세요</p>
-        <div className="w-full flex gap-2">
-          <SearchBar
-            onSearch={handleSearch}
-            onFilterChange={handleFilterChange}
-            availableOptions={availableOptions}
-            placeholder="내 지원 공고에서 검색..."
-          />
-          <NotificationSettings rules={rules} onRulesChange={updateRules} availableOptions={availableOptions} />
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">내 지원 현황</h1>
+        <div className="w-full flex justify-center">
+          <SearchBar onSearch={handleSearch} onFilterChange={handleFilterChange} availableOptions={availableOptions} />
         </div>
       </div>
 
-      <Tabs defaultValue="applied" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="applied" className="flex items-center gap-2">
-            지원한 공고
-            <Badge variant="secondary">{filteredAppliedJobs.length}</Badge>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="applied" className="text-base">
+            지원한 공고 ({appliedJobsList.length})
           </TabsTrigger>
-          <TabsTrigger value="bookmarked" className="flex items-center gap-2">
-            즐겨찾기
-            <Badge variant="secondary">{filteredBookmarkedJobs.length}</Badge>
+          <TabsTrigger value="bookmarked" className="text-base">
+            즐겨찾기 ({bookmarkedJobsList.length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="applied" className="mt-6">
-          <div className="mb-4 flex justify-between items-center">
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">지원한 공고 ({filteredAppliedJobs.length}개)</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {activeTab === "applied" ? "지원한 공고" : "즐겨찾기한 공고"} ({filteredAndSortedJobs.length}개)
+              </h2>
               {searchQuery && <p className="text-sm text-gray-600 mt-1">'{searchQuery}' 검색 결과</p>}
             </div>
             <JobSort value={sortOption} onValueChange={setSortOption} />
           </div>
+        </div>
+
+        <TabsContent value="applied" className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAppliedJobs.map((job) => (
-              <div key={job.id} className="relative">
-                <JobCard {...job} />
-                <div className="absolute top-2 left-2">
-                  <Badge className="bg-green-100 text-green-800">{job.appliedDate} 지원</Badge>
-                </div>
-              </div>
+            {filteredAndSortedJobs.map((job) => (
+              <JobCard
+                key={job.id}
+                id={job.id.toString()}
+                title={job.title}
+                company={job.company}
+                location={job.location}
+                deadline={job.deadline}
+                summary={job.summary}
+                tags={job.tags}
+                isBookmarked={bookmarkedJobs.includes(job.id.toString())}
+                isApplied={true}
+                onBookmark={handleBookmark}
+                onApply={handleApply}
+              />
             ))}
           </div>
-          {filteredAppliedJobs.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">조건에 맞는 지원 공고가 없습니다.</p>
-            </div>
-          )}
         </TabsContent>
 
-        <TabsContent value="bookmarked" className="mt-6">
-          <div className="mb-4 flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">즐겨찾기 ({filteredBookmarkedJobs.length}개)</h2>
-              {searchQuery && <p className="text-sm text-gray-600 mt-1">'{searchQuery}' 검색 결과</p>}
-            </div>
-            <JobSort value={sortOption} onValueChange={setSortOption} />
-          </div>
+        <TabsContent value="bookmarked" className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBookmarkedJobs.map((job) => (
-              <JobCard key={job.id} {...job} />
+            {filteredAndSortedJobs.map((job) => (
+              <JobCard
+                key={job.id}
+                id={job.id.toString()}
+                title={job.title}
+                company={job.company}
+                location={job.location}
+                deadline={job.deadline}
+                summary={job.summary}
+                tags={job.tags}
+                isBookmarked={true}
+                isApplied={appliedJobs.includes(job.id.toString())}
+                onBookmark={handleBookmark}
+                onApply={handleApply}
+              />
             ))}
           </div>
-          {filteredBookmarkedJobs.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">조건에 맞는 즐겨찾기 공고가 없습니다.</p>
-            </div>
-          )}
         </TabsContent>
+
+        {filteredAndSortedJobs.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">
+              {activeTab === "applied" ? "지원한 공고가 없습니다." : "즐겨찾기한 공고가 없습니다."}
+            </p>
+          </div>
+        )}
       </Tabs>
     </div>
+  )
+}
+
+export default function Page() {
+  return (
+    <AuthGuard>
+      <ApplicationsPage />
+    </AuthGuard>
   )
 }
