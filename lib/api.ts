@@ -2,15 +2,15 @@ import type { LoginRequest, LoginResponse, SignupRequest, User } from "@/types/a
 import type { JobPost, JobPostCreateRequest } from "@/types/job"
 import type { ApplicationRequest, ApplicationResponse, Application } from "@/types/application"
 import type { UserProfile, ProfileUpdateRequest, ProfileStats } from "@/types/profile"
-import type { OnboardingRequest } from "@/types/onboarding"
+import type { OnboardingRequest, OnboardingStatus } from "@/types/onboarding"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
 class ApiError extends Error {
   constructor(
-    message: string,
-    public status: number,
-    public data?: any,
+      message: string,
+      public status: number,
+      public data?: any,
   ) {
     super(message)
     this.name = "ApiError"
@@ -85,6 +85,44 @@ class ApiClient {
     }
   }
 
+  private async uploadRequest<T>(endpoint: string, formData: FormData): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`
+    const headers: Record<string, string> = {}
+
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: formData,
+      })
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`
+        let errorData = null
+
+        try {
+          errorData = await response.json()
+          errorMessage = errorData.message || errorMessage
+        } catch {
+          // JSON 파싱 실패 시 기본 메시지 사용
+        }
+
+        throw new ApiError(errorMessage, response.status, errorData)
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error
+      }
+      throw new ApiError("Network error occurred", 0)
+    }
+  }
+
   // 인증 관련 API
   async login(data: LoginRequest): Promise<LoginResponse> {
     return this.request<LoginResponse>("/api/auth/login", {
@@ -112,8 +150,8 @@ class ApiClient {
     })
   }
 
-  async checkOnboardingStatus(): Promise<{ completed: boolean }> {
-    return this.request<{ completed: boolean }>("/api/users/onboarding/status")
+  async checkOnboardingStatus(): Promise<OnboardingStatus> {
+    return this.request<OnboardingStatus>("/api/users/onboarding/status")
   }
 
   // 프로필 관련 API
@@ -125,6 +163,18 @@ class ApiClient {
     return this.request<UserProfile>("/api/users/profile", {
       method: "PUT",
       body: JSON.stringify(data),
+    })
+  }
+
+  async uploadProfileImage(file: File): Promise<{ profileImageUrl: string }> {
+    const formData = new FormData()
+    formData.append("profileImage", file)
+    return this.uploadRequest<{ profileImageUrl: string }>("/api/users/profile/image", formData)
+  }
+
+  async deleteProfileImage(): Promise<void> {
+    return this.request<void>("/api/users/profile/image", {
+      method: "DELETE",
     })
   }
 
@@ -173,15 +223,15 @@ class ApiClient {
   }
 
   async getUserApplications(userId: number): Promise<Application[]> {
-    return this.request<Application[]>(`/api/applications/user/${userId}`)
+    return this.request<Application[]>(`/api/applications/my`)
   }
 
   async getUserApplicationsByStatus(userId: number, status: string): Promise<Application[]> {
-    return this.request<Application[]>(`/api/applications/user/${userId}/status?status=${status}`)
+    return this.request<Application[]>(`/api/applications/my/status?status=${status}`)
   }
 
   async getUserApplicationsByJobPost(userId: number, jobPostId: number): Promise<Application[]> {
-    return this.request<Application[]>(`/api/applications/user/${userId}/jobpost/${jobPostId}`)
+    return this.request<Application[]>(`/api/applications/my/jobpost/${jobPostId}`)
   }
 }
 

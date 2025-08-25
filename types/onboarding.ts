@@ -11,3 +11,7 @@ export interface OnboardingData {
 }
 
 export interface OnboardingRequest extends OnboardingData {}
+
+export interface OnboardingStatus {
+  completed: boolean
+}

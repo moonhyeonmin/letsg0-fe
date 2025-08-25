@@ -8,9 +8,10 @@ export interface UserProfile {
   experience?: string
   position?: string
   bio?: string
-  skills?: string[]
+  skills: string[]
   education?: string
   company?: string
+  profileImageUrl?: string
   createdAt: string
   updatedAt: string
 }
@@ -30,7 +31,8 @@ export interface ProfileUpdateRequest {
 
 export interface ProfileStats {
   totalApplications: number
-  documentsPassedCount: number
-  interviewsInProgressCount: number
-  bookmarksCount: number
+  pendingApplications: number
+  interviewApplications: number
+  successfulApplications: number
+  profileCompleteness: number
 }
