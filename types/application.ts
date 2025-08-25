@@ -22,7 +22,6 @@ export interface ApplicationResponse {
   jobPostId: number
   status: ApplicationStatus
   memo: string
-  applicationDate: string
 }
 
 export interface Application {
@@ -38,12 +37,12 @@ export interface Application {
     company: string
     location: string
     position: string
-    content: string
     deadline: string
   }
   status: ApplicationStatus
   memo: string
-  applicationDate: string
+  isResulSuccess: boolean
+  application_date: string
   questions: ApplicationQuestion[]
 }
 
@@ -51,5 +50,4 @@ export interface ApplicationQuestion {
   id: number
   question: string
   answer: string
-  application_id: number
 }

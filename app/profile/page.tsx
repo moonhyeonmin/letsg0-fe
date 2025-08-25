@@ -1,208 +1,456 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { Edit, Mail, Phone, MapPin, Briefcase } from "lucide-react"
-import { useState } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  GraduationCap,
+  Building,
+  Edit,
+  Save,
+  X,
+  Plus,
+  Calendar,
+  Target,
+  Award,
+} from "lucide-react"
+import { useProfile } from "@/hooks/use-profile"
+import type { ProfileUpdateRequest } from "@/types/profile"
+
+const EXPERIENCE_OPTIONS = [
+  { value: "신입", label: "신입 (0년)" },
+  { value: "1-3년", label: "1-3년" },
+  { value: "4-6년", label: "4-6년" },
+  { value: "7-10년", label: "7-10년" },
+  { value: "10년+", label: "10년 이상" },
+]
+
+const POSITION_OPTIONS = [
+  "프론트엔드 개발자",
+  "백엔드 개발자",
+  "풀스택 개발자",
+  "모바일 개발자",
+  "데이터 사이언티스트",
+  "DevOps 엔지니어",
+  "UI/UX 디자이너",
+  "프로덕트 매니저",
+  "기타",
+]
 
 export default function ProfilePage() {
+  const { profile, stats, isLoading, isUpdating, updateProfile } = useProfile()
   const [isEditing, setIsEditing] = useState(false)
-  const [profile, setProfile] = useState({
-    name: "김개발",
-    email: "kim.developer@email.com",
-    phone: "010-1234-5678",
-    location: "서울시 강남구",
-    experience: "3년",
-    position: "프론트엔드 개발자",
-    bio: "React와 Next.js를 주로 사용하는 프론트엔드 개발자입니다. 사용자 경험을 중시하며, 깔끔하고 효율적인 코드 작성을 지향합니다.",
-    skills: ["React", "Next.js", "TypeScript", "JavaScript", "HTML/CSS", "Node.js", "Git"],
-    education: "컴퓨터공학과 학사",
-    company: "현재 스타트업 재직 중",
-  })
+  const [newSkill, setNewSkill] = useState("")
+  const [editData, setEditData] = useState<ProfileUpdateRequest>({})
 
-  const handleSave = () => {
-    setIsEditing(false)
-    // 여기서 실제로는 서버에 데이터를 저장
-    console.log("프로필 저장:", profile)
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">프로필을 불러올 수 없습니다</h2>
+          <p className="text-gray-600">잠시 후 다시 시도해주세요.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const handleEdit = () => {
+    setEditData({
+      nickname: profile.nickname,
+      name: profile.name || "",
+      phone: profile.phone || "",
+      location: profile.location || "",
+      experience: profile.experience || "",
+      position: profile.position || "",
+      bio: profile.bio || "",
+      skills: profile.skills || [],
+      education: profile.education || "",
+      company: profile.company || "",
+    })
+    setIsEditing(true)
   }
 
   const handleCancel = () => {
+    setEditData({})
+    setNewSkill("")
     setIsEditing(false)
-    // 원래 데이터로 복원하는 로직
+  }
+
+  const handleSave = async () => {
+    try {
+      await updateProfile(editData)
+      setIsEditing(false)
+      setEditData({})
+    } catch (error) {
+      // 에러는 useProfile 훅에서 처리됨
+    }
+  }
+
+  const handleInputChange = (field: keyof ProfileUpdateRequest, value: string | string[]) => {
+    setEditData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleAddSkill = () => {
+    if (newSkill.trim() && editData.skills && !editData.skills.includes(newSkill.trim())) {
+      setEditData((prev) => ({
+        ...prev,
+        skills: [...(prev.skills || []), newSkill.trim()],
+      }))
+      setNewSkill("")
+    }
+  }
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setEditData((prev) => ({
+      ...prev,
+      skills: (prev.skills || []).filter((skill) => skill !== skillToRemove),
+    }))
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">마이페이지</h1>
-        <p className="text-gray-600">프로필 정보를 관리하고 업데이트하세요</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 프로필 카드 */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader className="text-center">
-              <Avatar className="w-24 h-24 mx-auto mb-4">
-                <AvatarImage src="/placeholder-user.jpg" alt={profile.name} />
-                <AvatarFallback className="text-lg">{profile.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <CardTitle className="text-xl">{profile.name}</CardTitle>
-              <p className="text-muted-foreground">{profile.position}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="w-4 h-4 text-muted-foreground" />
-                <span>{profile.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="w-4 h-4 text-muted-foreground" />
-                <span>{profile.phone}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span>{profile.location}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Briefcase className="w-4 h-4 text-muted-foreground" />
-                <span>경력 {profile.experience}</span>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h4 className="font-medium mb-2">보유 스킬</h4>
-                <div className="flex flex-wrap gap-1">
-                  {profile.skills.map((skill, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">마이페이지</h1>
+          <p className="text-gray-600 mt-2">프로필 정보를 관리하고 활동 현황을 확인하세요</p>
         </div>
 
-        {/* 상세 정보 */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>기본 정보</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
-                <Edit className="w-4 h-4 mr-2" />
-                {isEditing ? "취소" : "편집"}
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isEditing ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name">이름</Label>
-                      <Input
-                        id="name"
-                        value={profile.name}
-                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="position">직무</Label>
-                      <Input
-                        id="position"
-                        value={profile.position}
-                        onChange={(e) => setProfile({ ...profile, position: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="email">이메일</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={profile.email}
-                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">전화번호</Label>
-                      <Input
-                        id="phone"
-                        value={profile.phone}
-                        onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="bio">자기소개</Label>
-                    <Textarea
-                      id="bio"
-                      value={profile.bio}
-                      onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                      rows={4}
-                    />
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 프로필 정보 */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>프로필 정보</CardTitle>
+                  <CardDescription>개인 정보와 경력 사항을 관리하세요</CardDescription>
+                </div>
+                {!isEditing ? (
+                  <Button onClick={handleEdit} variant="outline" size="sm">
+                    <Edit className="w-4 h-4 mr-2" />
+                    편집
+                  </Button>
+                ) : (
                   <div className="flex gap-2">
-                    <Button onClick={handleSave}>저장</Button>
-                    <Button variant="outline" onClick={handleCancel}>
+                    <Button onClick={handleSave} size="sm" disabled={isUpdating}>
+                      <Save className="w-4 h-4 mr-2" />
+                      {isUpdating ? "저장 중..." : "저장"}
+                    </Button>
+                    <Button onClick={handleCancel} variant="outline" size="sm">
+                      <X className="w-4 h-4 mr-2" />
                       취소
                     </Button>
                   </div>
-                </>
-              ) : (
-                <>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* 프로필 이미지 및 기본 정보 */}
+                <div className="flex items-center space-x-4">
+                  <Avatar className="w-20 h-20">
+                    <AvatarImage src="/placeholder-user.jpg" alt={profile.name || profile.nickname} />
+                    <AvatarFallback className="text-lg">{getInitials(profile.name || profile.nickname)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <div>
+                          <Label htmlFor="nickname">닉네임</Label>
+                          <Input
+                            id="nickname"
+                            value={editData.nickname || ""}
+                            onChange={(e) => handleInputChange("nickname", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="name">이름</Label>
+                          <Input
+                            id="name"
+                            value={editData.name || ""}
+                            onChange={(e) => handleInputChange("name", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <h3 className="text-xl font-semibold">{profile.name || profile.nickname}</h3>
+                        <p className="text-gray-600">@{profile.nickname}</p>
+                        <div className="flex items-center text-sm text-gray-500 mt-1">
+                          <Mail className="w-4 h-4 mr-1" />
+                          {profile.email}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* 연락처 정보 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-medium mb-2">자기소개</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{profile.bio}</p>
+                    <Label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                      <Phone className="w-4 h-4 mr-2" />
+                      전화번호
+                    </Label>
+                    {isEditing ? (
+                      <Input
+                        value={editData.phone || ""}
+                        onChange={(e) => handleInputChange("phone", e.target.value)}
+                        placeholder="전화번호를 입력하세요"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{profile.phone || "등록된 전화번호가 없습니다"}</p>
+                    )}
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium mb-1">학력</h4>
-                      <p className="text-sm text-muted-foreground">{profile.education}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-1">현재 상태</h4>
-                      <p className="text-sm text-muted-foreground">{profile.company}</p>
-                    </div>
+
+                  <div>
+                    <Label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      지역
+                    </Label>
+                    {isEditing ? (
+                      <Input
+                        value={editData.location || ""}
+                        onChange={(e) => handleInputChange("location", e.target.value)}
+                        placeholder="지역을 입력하세요"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{profile.location || "등록된 지역이 없습니다"}</p>
+                    )}
                   </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                </div>
+
+                {/* 경력 정보 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                      <Briefcase className="w-4 h-4 mr-2" />
+                      경력
+                    </Label>
+                    {isEditing ? (
+                      <Select
+                        value={editData.experience || ""}
+                        onValueChange={(value) => handleInputChange("experience", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="경력을 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EXPERIENCE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-gray-900">{profile.experience || "등록된 경력이 없습니다"}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                      <Target className="w-4 h-4 mr-2" />
+                      포지션
+                    </Label>
+                    {isEditing ? (
+                      <Select
+                        value={editData.position || ""}
+                        onValueChange={(value) => handleInputChange("position", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="포지션을 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {POSITION_OPTIONS.map((position) => (
+                            <SelectItem key={position} value={position}>
+                              {position}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-gray-900">{profile.position || "등록된 포지션이 없습니다"}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* 회사 및 학력 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                      <Building className="w-4 h-4 mr-2" />
+                      현재 회사
+                    </Label>
+                    {isEditing ? (
+                      <Input
+                        value={editData.company || ""}
+                        onChange={(e) => handleInputChange("company", e.target.value)}
+                        placeholder="현재 회사를 입력하세요"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{profile.company || "등록된 회사가 없습니다"}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                      <GraduationCap className="w-4 h-4 mr-2" />
+                      학력
+                    </Label>
+                    {isEditing ? (
+                      <Input
+                        value={editData.education || ""}
+                        onChange={(e) => handleInputChange("education", e.target.value)}
+                        placeholder="학력을 입력하세요"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{profile.education || "등록된 학력이 없습니다"}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* 자기소개 */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">자기소개</Label>
+                  {isEditing ? (
+                    <Textarea
+                      value={editData.bio || ""}
+                      onChange={(e) => handleInputChange("bio", e.target.value)}
+                      placeholder="자기소개를 입력하세요"
+                      rows={4}
+                    />
+                  ) : (
+                    <p className="text-gray-900 whitespace-pre-wrap">{profile.bio || "등록된 자기소개가 없습니다"}</p>
+                  )}
+                </div>
+
+                {/* 스킬 */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">보유 스킬</Label>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          value={newSkill}
+                          onChange={(e) => setNewSkill(e.target.value)}
+                          placeholder="스킬을 입력하고 추가 버튼을 눌러주세요"
+                          onKeyPress={(e) => e.key === "Enter" && handleAddSkill()}
+                        />
+                        <Button type="button" onClick={handleAddSkill} size="icon">
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {editData.skills && editData.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {editData.skills.map((skill) => (
+                            <Badge key={skill} variant="secondary" className="flex items-center gap-1">
+                              {skill}
+                              <X
+                                className="w-3 h-3 cursor-pointer hover:text-red-500"
+                                onClick={() => handleRemoveSkill(skill)}
+                              />
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {profile.skills && profile.skills.length > 0 ? (
+                        profile.skills.map((skill) => (
+                          <Badge key={skill} variant="secondary">
+                            {skill}
+                          </Badge>
+                        ))
+                      ) : (
+                        <p className="text-gray-500">등록된 스킬이 없습니다</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* 활동 통계 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>활동 통계</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">12</div>
-                  <div className="text-sm text-muted-foreground">총 지원</div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Award className="w-5 h-5 mr-2" />
+                  활동 통계
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">총 지원 수</span>
+                  <span className="text-2xl font-bold text-blue-600">{stats?.totalApplications || 0}</span>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">3</div>
-                  <div className="text-sm text-muted-foreground">서류 통과</div>
+                <Separator />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">서류 통과</span>
+                  <span className="text-2xl font-bold text-green-600">{stats?.documentsPassedCount || 0}</span>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">2</div>
-                  <div className="text-sm text-muted-foreground">면접 진행</div>
+                <Separator />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">면접 진행</span>
+                  <span className="text-2xl font-bold text-orange-600">{stats?.interviewsInProgressCount || 0}</span>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">5</div>
-                  <div className="text-sm text-muted-foreground">즐겨찾기</div>
+                <Separator />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">북마크</span>
+                  <span className="text-2xl font-bold text-purple-600">{stats?.bookmarksCount || 0}</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Calendar className="w-5 h-5 mr-2" />
+                  계정 정보
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="text-sm">
+                  <span className="text-gray-600">가입일: </span>
+                  <span className="font-medium">{new Date(profile.createdAt).toLocaleDateString("ko-KR")}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="text-gray-600">최근 업데이트: </span>
+                  <span className="font-medium">{new Date(profile.updatedAt).toLocaleDateString("ko-KR")}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

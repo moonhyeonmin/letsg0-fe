@@ -1,6 +1,8 @@
 import type { LoginRequest, LoginResponse, SignupRequest, User } from "@/types/auth"
 import type { JobPost, JobPostCreateRequest } from "@/types/job"
 import type { ApplicationRequest, ApplicationResponse, Application } from "@/types/application"
+import type { UserProfile, ProfileUpdateRequest, ProfileStats } from "@/types/profile"
+import type { OnboardingRequest } from "@/types/onboarding"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
@@ -102,6 +104,34 @@ class ApiClient {
     return this.request<User>("/api/users/me")
   }
 
+  // 온보딩 관련 API
+  async completeOnboarding(data: OnboardingRequest): Promise<void> {
+    return this.request<void>("/api/users/onboarding", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async checkOnboardingStatus(): Promise<{ completed: boolean }> {
+    return this.request<{ completed: boolean }>("/api/users/onboarding/status")
+  }
+
+  // 프로필 관련 API
+  async getUserProfile(): Promise<UserProfile> {
+    return this.request<UserProfile>("/api/users/profile")
+  }
+
+  async updateUserProfile(data: ProfileUpdateRequest): Promise<UserProfile> {
+    return this.request<UserProfile>("/api/users/profile", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getProfileStats(): Promise<ProfileStats> {
+    return this.request<ProfileStats>("/api/users/profile/stats")
+  }
+
   // JobPost 관련 API
   async getJobPosts(): Promise<JobPost[]> {
     return this.request<JobPost[]>("/api/jobs")
@@ -143,11 +173,11 @@ class ApiClient {
   }
 
   async getUserApplications(userId: number): Promise<Application[]> {
-    return this.request<Application[]>(`/api/applications/my`)
+    return this.request<Application[]>(`/api/applications/user/${userId}`)
   }
 
   async getUserApplicationsByStatus(userId: number, status: string): Promise<Application[]> {
-    return this.request<Application[]>(`/api/applications/my/status?status=${status}`)
+    return this.request<Application[]>(`/api/applications/user/${userId}/status?status=${status}`)
   }
 
   async getUserApplicationsByJobPost(userId: number, jobPostId: number): Promise<Application[]> {
