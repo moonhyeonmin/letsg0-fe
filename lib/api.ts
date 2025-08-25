@@ -143,11 +143,11 @@ class ApiClient {
   }
 
   async getUserApplications(userId: number): Promise<Application[]> {
-    return this.request<Application[]>(`/api/applications/user/${userId}`)
+    return this.request<Application[]>(`/api/applications/my`)
   }
 
   async getUserApplicationsByStatus(userId: number, status: string): Promise<Application[]> {
-    return this.request<Application[]>(`/api/applications/user/${userId}/status?status=${status}`)
+    return this.request<Application[]>(`/api/applications/my/status?status=${status}`)
   }
 
   async getUserApplicationsByJobPost(userId: number, jobPostId: number): Promise<Application[]> {
