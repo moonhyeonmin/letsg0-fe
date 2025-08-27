@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "JobPortal - 취업 공고 사이트",
+  title: "letsGo - 취업 공고 사이트",
   description: "최고의 취업 기회를 찾아보세요",
     generator: 'v0.app'
 }

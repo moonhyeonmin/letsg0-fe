@@ -55,7 +55,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">로그인</CardTitle>
-          <CardDescription className="text-center">JobPortal에 오신 것을 환영합니다</CardDescription>
+          <CardDescription className="text-center">letsGo에 오신 것을 환영합니다</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

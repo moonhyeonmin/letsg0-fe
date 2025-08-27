@@ -11,7 +11,6 @@ export interface UserProfile {
   skills: string[]
   education?: string
   company?: string
-  profileImageUrl?: string
   createdAt: string
   updatedAt: string
 }
@@ -31,8 +30,7 @@ export interface ProfileUpdateRequest {
 
 export interface ProfileStats {
   totalApplications: number
-  pendingApplications: number
-  interviewApplications: number
-  successfulApplications: number
-  profileCompleteness: number
+  documentsPassedCount: number
+  interviewsInProgressCount: number
+  bookmarksCount: number
 }

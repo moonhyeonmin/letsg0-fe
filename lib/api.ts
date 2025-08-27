@@ -222,7 +222,7 @@ class ApiClient {
     })
   }
 
-  async getUserApplications(userId: number): Promise<Application[]> {
+  async getUserApplications(): Promise<Application[]> {
     return this.request<Application[]>(`/api/applications/my`)
   }
 

@@ -117,7 +117,7 @@ export default function OnboardingPage() {
       await apiClient.completeOnboarding(formData)
       toast({
         title: "온보딩 완료!",
-        description: "프로필 설정이 완료되었습니다. JobPortal을 시작해보세요!",
+        description: "프로필 설정이 완료되었습니다. letsGo를 시작해보세요!",
       })
       router.push("/")
     } catch (error) {
@@ -301,7 +301,7 @@ export default function OnboardingPage() {
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">프로필 설정</h1>
-          <p className="text-gray-600 mt-2">JobPortal을 시작하기 위해 기본 정보를 입력해주세요</p>
+          <p className="text-gray-600 mt-2">letsGo를 시작하기 위해 기본 정보를 입력해주세요</p>
         </div>
 
         {/* Progress Bar */}

@@ -22,7 +22,7 @@ export function useApplications() {
     try {
       setLoading(true)
       setError(null)
-      const userApplications = await apiClient.getUserApplications(user.user_id)
+      const userApplications = await apiClient.getUserApplications()
       setApplications(userApplications)
     } catch (err) {
       const errorMessage = err instanceof ApiError ? err.message : "지원 내역을 불러오는 중 오류가 발생했습니다."

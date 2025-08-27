@@ -17,7 +17,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Plus, Minus, FileText } from "lucide-react"
 import type { JobPostExtended } from "@/types/job"
-import type { ApplicationQuestionDto, ApplicationRequest } from "@/types/application"
+import type { ApplicationQuestion, ApplicationRequest } from "@/types/application"
 import { ApplicationStatus } from "@/types/application"
 
 interface ApplicationFormProps {
@@ -30,7 +30,7 @@ interface ApplicationFormProps {
 
 export function ApplicationForm({ job, open, onOpenChange, onSubmit, isLoading }: ApplicationFormProps) {
   const [memo, setMemo] = useState("")
-  const [questions, setQuestions] = useState<ApplicationQuestionDto[]>([
+  const [questions, setQuestions] = useState<ApplicationQuestion[]>([
     { question: "지원 동기를 작성해주세요.", answer: "" },
     { question: "본인의 강점과 경험을 소개해주세요.", answer: "" },
   ])
